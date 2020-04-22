@@ -28,6 +28,7 @@ var (
 	xe_account_id  string
 	xe_account_key string
 	xe_url         string
+	con_String     string
 )
 
 const (
@@ -60,9 +61,10 @@ func main() {
 	xe_account_id = os.Getenv("xe_account_id")
 	xe_account_key = os.Getenv("xe_account_key")
 	xe_url = os.Getenv("xe_url")
+	con_String = os.Getenv("con_String")
 
 	// open lazy connection to database
-	db, err := sql.Open("postgres", conString)
+	db, err := sql.Open("postgres", con_String)
 	if err != nil {
 		log.Fatal("Conn Open → ", err)
 	}
@@ -118,6 +120,7 @@ func fetchData(symbol string, wg *sync.WaitGroup, db *sql.DB) {
 	if resp.Body != nil {
 		resp.Body.Close()
 	}
+	fmt.Println("bodyText", string(bodyText))
 
 	// mapping byte array to struct
 	err = json.Unmarshal(bodyText, &result)
@@ -137,7 +140,7 @@ func updateDB(symbol string, result ResponseData, db *sql.DB) {
 
 	// building query string
 	for i, res := range result.To {
-
+		fmt.Println("hi")
 		values = append(values, symbol, res.Quotecurrency, res.Mid, result.Timestamp, result.Timestamp)
 
 		numFields := 5
