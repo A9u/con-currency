@@ -16,7 +16,7 @@ func Test_fetchData(t *testing.T) {
 		log.Fatal("Conn Open → ", err)
 	}
 	defer db.Close()
-	t.Run(tt.name, func(t *testing.T) {
+	t.Run("fetchData", func(t *testing.T) {
 		fetchData("USD", wg, db)
 	})
 
