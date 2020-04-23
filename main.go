@@ -51,7 +51,8 @@ func main() {
 	var wg sync.WaitGroup
 
 	// list of currency, TODO → to be read from external file
-	currencyArray := []string{"AED", "CUP", "AFN", "ETB", "ALL", "AMD", "AOA", "ARS", "AZN", "BAM", "BBD", "BDT", "BGN", "IQD", "BMD", "IRR", "BIF", "BRL", "BSD", "BTN", "BYN", "CAD", "BZD", "KPW", "JOD", "COP", "CRC", "CVE", "CZK", "DOP", "DZD", "EGP", "GBP", "GEL", "AWG", "GHS", "GIP", "GTQ", "GYD", "HKD", "HNL", "HRK", "HUF", "CUC", "ILS", "IMP", "INR", "BOB", "JEP", "JMD", "KES", "KGS", "FKP", "CHF", "ERN", "GGP", "BND", "CDF", "IDR", "CLP", "GNF", "JPY", "KMF", "SPL", "PYG", "TZS", "MRU", "KYD", "KZT", "MDL", "LKR", "LRD", "LSL", "RUB", "MGA", "SHP", "MMK", "MNT", "MOP", "MUR", "MVR", "MWK", "MXN", "MYR", "NAD", "NGN", "NIO", "NPR", "NZD", "PAB", "PEN", "PGK", "PHP", "PKR", "PLN", "KWD", "RON", "RSD", "SYP", "LYD", "SAR", "SBD", "SDG", "SEK", "SGD", "TWD", "SOS", "SRD", "SZL", "TJS", "TMT", "STN", "TOP", "TRY", "TVD", "TND", "MKD", "UAH", "UGX", "UYU", "UZS", "USD", "LAK", "RWF", "KRW", "BHD", "OMR", "BWP", "XCD", "CNY", "YER", "ZAR", "ZMW", "ANG", "FJD", "GMD", "HTG", "KHR", "LBP", "MAD", "MZN", "QAR", "SCR", "SLL", "THB", "TTD", "AUD", "DKK", "NOK", "SVC", "VEF", "WST", "ZWD", "EUR", "VES", "XOF", "XPF", "DJF", "ISK", "VUV", "XAF", "VND"}
+	// currencyArray := []string{"AED", "CUP", "AFN", "ETB", "ALL", "AMD", "AOA", "ARS", "AZN", "BAM", "BBD", "BDT", "BGN", "IQD", "BMD", "IRR", "BIF", "BRL", "BSD", "BTN", "BYN", "CAD", "BZD", "KPW", "JOD", "COP", "CRC", "CVE", "CZK", "DOP", "DZD", "EGP", "GBP", "GEL", "AWG", "GHS", "GIP", "GTQ", "GYD", "HKD", "HNL", "HRK", "HUF", "CUC", "ILS", "IMP", "INR", "BOB", "JEP", "JMD", "KES", "KGS", "FKP", "CHF", "ERN", "GGP", "BND", "CDF", "IDR", "CLP", "GNF", "JPY", "KMF", "SPL", "PYG", "TZS", "MRU", "KYD", "KZT", "MDL", "LKR", "LRD", "LSL", "RUB", "MGA", "SHP", "MMK", "MNT", "MOP", "MUR", "MVR", "MWK", "MXN", "MYR", "NAD", "NGN", "NIO", "NPR", "NZD", "PAB", "PEN", "PGK", "PHP", "PKR", "PLN", "KWD", "RON", "RSD", "SYP", "LYD", "SAR", "SBD", "SDG", "SEK", "SGD", "TWD", "SOS", "SRD", "SZL", "TJS", "TMT", "STN", "TOP", "TRY", "TVD", "TND", "MKD", "UAH", "UGX", "UYU", "UZS", "USD", "LAK", "RWF", "KRW", "BHD", "OMR", "BWP", "XCD", "CNY", "YER", "ZAR", "ZMW", "ANG", "FJD", "GMD", "HTG", "KHR", "LBP", "MAD", "MZN", "QAR", "SCR", "SLL", "THB", "TTD", "AUD", "DKK", "NOK", "SVC", "VEF", "WST", "ZWD", "EUR", "VES", "XOF", "XPF", "DJF", "ISK", "VUV", "XAF", "VND"}
+	currencyArray := []string{"INR"}
 
 	// loads api credentials from api.env file
 	err := godotenv.Load("api.env")
@@ -89,6 +90,10 @@ func main() {
 	log.Printf("Operation took %s", elapsed)
 }
 
+func sum() {
+
+}
+
 // fetchData: Consumes api and pass the result to 'updateDb' function
 func fetchData(symbol string, wg *sync.WaitGroup, db *sql.DB) {
 
@@ -98,38 +103,43 @@ func fetchData(symbol string, wg *sync.WaitGroup, db *sql.DB) {
 	client := &http.Client{}
 
 	// creating request
-	req, err := http.NewRequest("GET", xe_url+"?to=*&from="+symbol, nil)
+	// req, err := http.NewRequest("GET", xe_url+"?to=*&from="+symbol, nil)
+	req, err := http.NewRequest("GET", xe_url+"?to=INR&from="+symbol, nil)
 	req.SetBasicAuth(xe_account_id, xe_account_key)
 	if err != nil {
 		fmt.Println("NewRequest → ", err)
 	}
 
-	// send request
+	// send requestk
 	resp, err := client.Do(req)
 	if err != nil {
 		fmt.Println("Send request → ", err)
 	}
 
-	// reading response
-	bodyText, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("Reading resp → ", err)
-	}
+	if resp.StatusCode == http.StatusOK {
+		// reading response
+		bodyText, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Println("Reading resp → ", err)
+		}
 
-	// closing response body
-	if resp.Body != nil {
-		resp.Body.Close()
-	}
-	fmt.Println("bodyText", string(bodyText))
+		// closing response body
+		if resp.Body != nil {
+			resp.Body.Close()
+		}
 
-	// mapping byte array to struct
-	err = json.Unmarshal(bodyText, &result)
-	if err != nil {
-		log.Print("Unmarshal → ", err)
-	}
+		// mapping byte array to struct
+		err = json.Unmarshal(bodyText, &result)
+		if err != nil {
+			log.Print("Unmarshal → ", err)
+		}
 
-	// calling updateDb to fill database
-	updateDB(symbol, result, db)
+		// calling updateDb to fill database
+		updateDB(symbol, result, db)
+	} else {
+		fmt.Println("API Error, Please check!")
+		return
+	}
 
 }
 
@@ -140,7 +150,7 @@ func updateDB(symbol string, result ResponseData, db *sql.DB) {
 
 	// building query string
 	for i, res := range result.To {
-		fmt.Println("hi")
+
 		values = append(values, symbol, res.Quotecurrency, res.Mid, result.Timestamp, result.Timestamp)
 
 		numFields := 5
