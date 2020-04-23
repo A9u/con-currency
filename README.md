@@ -15,3 +15,8 @@ The env file must cointain this
 Run using command: go run main.go
 
 TODO → Read currency data from external file, not from internal array.
+
+
+Benchmark:
+
+15 seconds taken for 162 currencies on a 4 core machine
