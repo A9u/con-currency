@@ -1,12 +1,12 @@
 package service
 
 import (
-	"database/sql"
-	"strconv"
 	"con-currency/config"
 	"con-currency/db"
 	"con-currency/model"
 	"con-currency/xeservice"
+	"database/sql"
+	"strconv"
 
 	"sync"
 
@@ -21,13 +21,20 @@ func StartProcess() {
 
 	logger.WithField("currencies", currencies).Info("Currencies initialized")
 
-	//initialize database
+	//Initialize database
 	dbInstance, err := db.Init()
 	if err != nil {
 		logger.WithField("err", err.Error()).Error("Cannot initialize database")
 		return
 	}
 	defer dbInstance.Close()
+
+	//Create table if not exist
+	err = db.CreateTable(dbInstance)
+	if err != nil {
+		logger.WithField("err", err.Error()).Error("Cannot initialize database")
+		return
+	}
 
 	//Spawning goroutines for processing each currency
 	for _, currency := range currencies {
