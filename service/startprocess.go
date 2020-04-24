@@ -8,15 +8,12 @@ import (
 	"database/sql"
 	"strconv"
 
-	"sync"
-
 	logger "github.com/sirupsen/logrus"
 )
 
 //StartProcess start the process of fetching currency exchange rates and insert it into database
 func StartProcess() {
 
-	var w sync.WaitGroup
 	var currencies = config.GetStringSlice("currency_list")
 
 	logger.WithField("currencies", currencies).Info("Currencies initialized")
@@ -32,27 +29,48 @@ func StartProcess() {
 	//Create table if not exist
 	err = db.CreateTable(dbInstance)
 	if err != nil {
-		logger.WithField("err", err.Error()).Error("Cannot initialize database")
+		logger.WithField("err", err.Error()).Error("Cannot create table")
 		return
 	}
 
+	// creating channel for handling errors and response
+	ch := make(chan model.Result, len(currencies))
+
 	//Spawning goroutines for processing each currency
 	for _, currency := range currencies {
-		w.Add(1)
-		go apiToDB(currency, dbInstance, &w)
+		go apiToDB(currency, dbInstance, ch)
 	}
 
-	w.Wait()
+	var rowsAffected int64
+	index := len(currencies)
+
+	for c := range ch {
+		// if error occours, break execution
+		if c.Err != nil {
+			logger.WithField("err", c.Err.Error()).Error("Exit")
+			break
+		} else {
+			// get total numbers of rows affected by each goroutine
+			rowsAffected += c.RowsAffected
+			index--
+			// if all gouroutines responds, break execution
+			if index == 0 {
+				logger.WithField("rows affected", rowsAffected).Info("Job successfull")
+				break
+			}
+		}
+	}
 
 }
 
-func apiToDB(currency string, dbInstance *sql.DB, wg *sync.WaitGroup) {
-
-	defer wg.Done()
+func apiToDB(currency string, dbInstance *sql.DB, ch chan model.Result) {
 
 	resp, err := xeservice.GetExRateFromAPI(currency)
 	if err != nil {
-		logger.WithField("err", err).Error("API issue found")
+		ch <- model.Result{
+			0,
+			err,
+		}
 		return
 	}
 
@@ -61,16 +79,27 @@ func apiToDB(currency string, dbInstance *sql.DB, wg *sync.WaitGroup) {
 	result, err := db.FireQuery(query, val, dbInstance)
 
 	if err != nil {
-		logger.WithField("err", err.Error()).Error("Query execution failed")
+		ch <- model.Result{
+			0,
+			err,
+		}
 		return
 	}
 
 	rowCnt, err := result.RowsAffected()
 	if err != nil {
-		logger.WithField("err", err.Error()).Error("Update DB failed")
+		ch <- model.Result{
+			0,
+			err,
+		}
 		return
 	}
-	logger.WithField("affected rows", rowCnt).Info("Update DB successful")
+
+	ch <- model.Result{
+		rowCnt,
+		nil,
+	}
+
 	return
 }
 

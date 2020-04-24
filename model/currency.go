@@ -20,6 +20,6 @@ type ErrorResponse struct {
 }
 
 type Result struct {
-	message string
-	err     error
+	RowsAffected int64
+	Err          error
 }
