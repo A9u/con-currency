@@ -6,6 +6,9 @@
 *.so
 *.dylib
 
+# Config file
+*.json
+
 # Test binary, built with `go test -c`
 *.test
 
