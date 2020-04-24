@@ -36,9 +36,8 @@
     "currency_list":[ "USD" ] 
 }
 
-# Run using command: go run main.go
+  Run using command: go run main.go
 
-
-
-# Benchmark: 
+  Benchmark: 
+  
 took 15 seconds for 162 currencies.
