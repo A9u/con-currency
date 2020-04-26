@@ -2,6 +2,7 @@ package model
 
 import "time"
 
+// XEcurrency is model of API response
 type XEcurrency struct {
 	Terms     string    `json:"terms"`
 	Privacy   string    `json:"privacy"`
@@ -14,12 +15,14 @@ type XEcurrency struct {
 	} `json:"to"`
 }
 
+// ErrorResponse is model of API error response
 type ErrorResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }
 
-type Result struct {
+// Results is model of the gouroutine responses
+type Results struct {
 	RowsAffected int64
 	Err          error
 }

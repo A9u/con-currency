@@ -46,3 +46,24 @@ func FireQuery(query string, val []interface{}, db *sql.DB) (result sql.Result, 
 
 	return result, nil
 }
+
+// CreateTable if not exist
+func CreateTable(db *sql.DB) error {
+	q := `CREATE TABLE IF NOT EXISTS public.exchange_rates(
+	       from_currency character varying(3) COLLATE pg_catalog."default",
+	       to_currency character varying(3) COLLATE pg_catalog."default",
+	       rate double precision,
+	       created_at timestamp with time zone,
+	   	updated_at timestamp with time zone,
+	   	CONSTRAINT unq UNIQUE (from_currency, to_currency)
+	   )`
+	_, err := db.Exec(q)
+	if err != nil {
+
+		logger.WithField("err", err.Error()).Error("Create table failed")
+		return err
+	}
+
+	return nil
+
+}

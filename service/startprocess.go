@@ -6,6 +6,7 @@ import (
 	"con-currency/model"
 	"con-currency/xeservice"
 	"database/sql"
+	"runtime"
 	"strconv"
 
 	logger "github.com/sirupsen/logrus"
@@ -13,6 +14,7 @@ import (
 
 //StartProcess start the process of fetching currency exchange rates and insert it into database
 func StartProcess() {
+	var rowsAffected int64
 
 	var currencies = config.GetStringSlice("currency_list")
 
@@ -33,74 +35,78 @@ func StartProcess() {
 		return
 	}
 
-	// creating channel for handling errors and response
-	ch := make(chan model.Result, len(currencies))
+	// creating channel for recieving errors and response
+	results := make(chan model.Result, len(currencies))
 
-	//Spawning goroutines for processing each currency
+	// creating channel for sending jobs
+	jobs := make(chan string, len(currencies))
+
+	// Creating workers
+	for w := 0; w <= runtime.NumCPU()-1; w++ {
+		go apiToDB(dbInstance, jobs, results)
+
+	}
+
+	// sending jobs
 	for _, currency := range currencies {
-		go apiToDB(currency, dbInstance, ch)
+		jobs <- currency
 	}
+	close(jobs)
 
-	var rowsAffected int64
-	index := len(currencies)
-
-	for c := range ch {
-		// if error occours, break execution
-		if c.Err != nil {
-			logger.WithField("err", c.Err.Error()).Error("Exit")
-			break
-		} else {
-			// get total numbers of rows affected by each goroutine
-			rowsAffected += c.RowsAffected
-			index--
-			// if all gouroutines responds, break execution
-			if index == 0 {
-				logger.WithField("rows affected", rowsAffected).Info("Job successfull")
-				break
-			}
+	// recieving results
+	for i := 0; i < len(currencies); i++ {
+		res := <-results
+		if res.Err != nil {
+			logger.WithField("err", res.Err.Error()).Error("Exit")
+			return
 		}
+		rowsAffected += res.RowsAffected
+
 	}
+	logger.WithField("rows affected", rowsAffected).Info("Job successfull")
 
 }
 
-func apiToDB(currency string, dbInstance *sql.DB, ch chan model.Result) {
-
-	resp, err := xeservice.GetExRateFromAPI(currency)
-	if err != nil {
-		ch <- model.Result{
-			0,
-			err,
+func apiToDB(dbInstance *sql.DB, jobs <-chan string, results chan<- model.Results) {
+	for currency := range jobs {
+		xeResp, err := xeservice.GetExRateFromAPI(currency)
+		if err != nil {
+			results <- model.Results{
+				0,
+				err,
+			}
+			return
 		}
+
+		query, val := queryBuilder(xeResp)
+
+		dbResp, err := db.FireQuery(query, val, dbInstance)
+
+		if err != nil {
+			results <- model.Results{
+				0,
+				err,
+			}
+			return
+		}
+
+		rowCnt, err := dbResp.RowsAffected()
+		if err != nil {
+			results <- model.Results{
+				0,
+				err,
+			}
+			return
+		}
+
+		results <- model.Results{
+			rowCnt,
+			nil,
+		}
+
 		return
 	}
 
-	query, val := queryBuilder(resp)
-
-	result, err := db.FireQuery(query, val, dbInstance)
-
-	if err != nil {
-		ch <- model.Result{
-			0,
-			err,
-		}
-		return
-	}
-
-	rowCnt, err := result.RowsAffected()
-	if err != nil {
-		ch <- model.Result{
-			0,
-			err,
-		}
-		return
-	}
-
-	ch <- model.Result{
-		rowCnt,
-		nil,
-	}
-
-	return
 }
 
 func queryBuilder(resp model.XEcurrency) (string, []interface{}) {
