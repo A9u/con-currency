@@ -36,7 +36,7 @@ func StartProcess() {
 	}
 
 	// creating channel for recieving errors and response
-	results := make(chan model.Result, len(currencies))
+	results := make(chan model.Results, len(currencies))
 
 	// creating channel for sending jobs
 	jobs := make(chan string, len(currencies))
