@@ -5,6 +5,7 @@ import (
 	"con-currency/model"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -19,8 +20,12 @@ func GetExRateFromAPI(currency string) (xeResp model.XEcurrency, err error) {
 	password := config.GetConfig("api_config.xe_account_key")
 
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", url+"?to=*&from="+currency, nil)
-
+	//+"?to=INR&from="+currency
+	req, err := http.NewRequest("GET", url, nil)
+	q := req.URL.Query()
+	q.Add("to", "INR")
+	q.Add("from", currency)
+	req.URL.RawQuery = q.Encode()
 	req.SetBasicAuth(username, password)
 
 	resp, err := client.Do(req)
@@ -34,6 +39,7 @@ func GetExRateFromAPI(currency string) (xeResp model.XEcurrency, err error) {
 		return
 	}
 
+	fmt.Println(string(r))
 	// for unsuccessful response
 	if resp.StatusCode != http.StatusOK {
 		errResp := model.ErrorResponse{}

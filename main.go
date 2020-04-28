@@ -17,7 +17,7 @@ func main() {
 	})
 
 	// Initialize configurations
-	err := config.InitConfig()
+	err := config.InitConfig("config")
 	if err != nil {
 		logger.WithField("error in config file", err.Error()).Error("Exit")
 		return

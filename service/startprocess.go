@@ -44,7 +44,6 @@ func StartProcess() {
 	// Creating workers
 	for w := 0; w <= runtime.NumCPU()-1; w++ {
 		go apiToDB(dbInstance, jobs, results)
-
 	}
 
 	// sending jobs
