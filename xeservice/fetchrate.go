@@ -5,7 +5,6 @@ import (
 	"con-currency/model"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -23,7 +22,7 @@ func GetExRateFromAPI(currency string) (xeResp model.XEcurrency, err error) {
 	//+"?to=INR&from="+currency
 	req, err := http.NewRequest("GET", url, nil)
 	q := req.URL.Query()
-	q.Add("to", "INR")
+	q.Add("to", "INR") // '*' for all
 	q.Add("from", currency)
 	req.URL.RawQuery = q.Encode()
 	req.SetBasicAuth(username, password)
@@ -39,7 +38,6 @@ func GetExRateFromAPI(currency string) (xeResp model.XEcurrency, err error) {
 		return
 	}
 
-	fmt.Println(string(r))
 	// for unsuccessful response
 	if resp.StatusCode != http.StatusOK {
 		errResp := model.ErrorResponse{}
