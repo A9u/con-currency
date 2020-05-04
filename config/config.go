@@ -5,9 +5,8 @@ import (
 	"github.com/spf13/viper"
 )
 
-//InitConfig function to initialize all configurations
-func InitConfig(path string) error {
-
+//Init function to initialize all configurations
+func Init(path string) error {
 	viper.SetConfigName(path)
 	viper.AddConfigPath(".")
 
@@ -16,12 +15,13 @@ func InitConfig(path string) error {
 		logger.WithField("error config file", err.Error()).Error("Cannot initialize config")
 		return err
 	}
+
 	logger.WithField("msg", "initialized successfully").Info("Config initialization")
 	return nil
 }
 
-//GetConfig method to get configs from config file
-func GetConfig(keyName string) string {
+//GetConfigString method to get configs from config file
+func GetConfigString(keyName string) string { //todo getstring
 	keyValue := viper.GetString(keyName)
 	return keyValue
 }
