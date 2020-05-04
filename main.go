@@ -30,18 +30,23 @@ func main() {
 	xeService := xeservice.New()
 
 	//Initialize database
-	dbInstance, err := db.Init() // will ret interface
+
+	storer, err := db.Init() // will ret interface
 	if err != nil {
-		logger.WithField("err", err.Error()).Error("Cannot initialize database")
+		logger.WithField("err", err.Error()).Error("Cannot connect database")
 		return
 	}
 
-	defer dbInstance.Close()
+	// close database connection
+	defer storer.Close()
+	if err = storer.CreateTableIfMissing(); err != nil {
+		logger.WithField("err", err.Error()).Error("Cannot create table")
+	}
 
 	currencies := config.GetStringSlice("currency_list")
 
 	// Starting the process
-	service.StartProcess(currencies, xeService, dbInstance)
+	service.StartProcess(currencies, xeService, storer)
 
 	elapsed := time.Since(start)
 	logger.WithField("info:", elapsed).Info("Execution time")

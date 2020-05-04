@@ -4,7 +4,6 @@ import (
 	"con-currency/db"
 	"con-currency/model"
 	"con-currency/xeservice"
-	"database/sql"
 
 	logger "github.com/sirupsen/logrus"
 )
@@ -20,7 +19,7 @@ import (
 // }
 
 //StartProcess start the process of fetching currency exchange rates and insert it into database
-func StartProcess(currencies []string, xeService xeservice.XEService, dbInstance *sql.DB) {
+func StartProcess(currencies []string, xeService xeservice.XEService, storer db.Storer) {
 	var rowsAffected int64
 
 	//xe := XEServiceMock{}
@@ -32,7 +31,7 @@ func StartProcess(currencies []string, xeService xeservice.XEService, dbInstance
 
 	// Creating workers
 	for w := 0; w <= 10; w++ {
-		go processCurrencies(xeService, dbInstance, jobs, results)
+		go processCurrencies(xeService, storer, jobs, results)
 	}
 
 	// sending jobs
@@ -57,10 +56,10 @@ func StartProcess(currencies []string, xeService xeservice.XEService, dbInstance
 }
 
 // func processCurrencies(xeService xeservice.GetExchangeRater, dbInstance *sql.DB, jobs <-chan string, results chan<- model.Results) {
-func processCurrencies(xeService xeservice.XEService, dbInstance *sql.DB, jobs <-chan string, results chan<- model.Results) {
+func processCurrencies(xeService xeservice.XEService, storer db.Storer, jobs <-chan string, results chan<- model.Results) {
 
 	for currency := range jobs {
-		rowCnt, err := processCurrency(currency, xeService, dbInstance)
+		rowCnt, err := processCurrency(currency, xeService, storer)
 		if err != nil {
 			results <- model.Results{
 				RowsAffected: 0,
@@ -78,13 +77,13 @@ func processCurrencies(xeService xeservice.XEService, dbInstance *sql.DB, jobs <
 }
 
 // func processCurrency(currency string, xeService xeservice.GetExchangeRater, dbInstance *sql.DB) (rowCnt int64, err error) {
-func processCurrency(currency string, xeService xeservice.XEService, dbInstance *sql.DB) (rowCnt int64, err error) {
+func processCurrency(currency string, xeService xeservice.XEService, storer db.Storer) (rowCnt int64, err error) {
 	xeResp, err := xeService.GetExchangeRate(currency)
 	if err != nil {
 		return
 	}
 
-	rowCnt, err = db.UpdateCurrencies(xeResp, dbInstance)
+	rowCnt, err = storer.UpsertCurrencies(xeResp)
 	if err != nil {
 		return
 	}
