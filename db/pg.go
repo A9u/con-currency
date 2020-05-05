@@ -43,8 +43,8 @@ func Init() (storer Storer, err error) {
 }
 
 // UpdateCurrencies insert/update currencies into database
-func (s *pgStore) UpsertCurrencies(xeResp model.XEcurrency) (rowCnt int64, err error) {
-	query, val := s.queryBuilder(xeResp)
+func (s *pgStore) UpsertCurrencies(currencyRates []model.CurrencyRate) (rowCnt int64, err error) {
+	query, val := s.queryBuilder(currencyRates)
 
 	result, err := s.db.Exec(query, val...)
 	if err != nil {
@@ -79,15 +79,14 @@ func (s *pgStore) CreateTableIfMissing() error {
 	return nil
 }
 
-func (s *pgStore) queryBuilder(resp model.XEcurrency) (string, []interface{}) {
+func (s *pgStore) queryBuilder(currencyRates []model.CurrencyRate) (string, []interface{}) {
 	values := []interface{}{}
 	query := `INSERT INTO exchange_rates (from_currency,to_currency,rate,created_at,updated_at) values `
-
-	for i, r := range resp.To {
+	numFields := 5
+	for i, rate := range currencyRates {
 		//appending keys
-		values = append(values, resp.From, r.Quotecurrency, r.Mid, resp.Timestamp, resp.Timestamp)
+		values = append(values, rate.From, rate.To, rate.Amount, rate.Timestamp, rate.Timestamp)
 
-		numFields := 5
 		n := i * numFields
 
 		//appending $1, $2, ...
@@ -100,7 +99,7 @@ func (s *pgStore) queryBuilder(resp model.XEcurrency) (string, []interface{}) {
 
 	query = query[:len(query)-1]
 	query += `ON CONFLICT ON CONSTRAINT unq
-		      DO UPDATE SET rate =excluded.rate,updated_at = excluded.updated_at where exchange_rates.rate is distinct from excluded.rate`
+		      DO UPDATE SET rate = excluded.rate,updated_at = excluded.updated_at where exchange_rates.rate is distinct from excluded.rate`
 
 	return query, values
 }

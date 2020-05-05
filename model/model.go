@@ -2,17 +2,12 @@ package model
 
 import "time"
 
-// XEcurrency is model of API response
-type XEcurrency struct {
-	Terms     string    `json:"terms"`
-	Privacy   string    `json:"privacy"`
-	From      string    `json:"from"`
-	Amount    float64   `json:"amount"`
-	Timestamp time.Time `json:"timestamp"`
-	To        []struct {
-		Quotecurrency string  `json:"quotecurrency"`
-		Mid           float64 `json:"mid"`
-	} `json:"to"`
+// Currency is model of API response
+type CurrencyRate struct {
+	From      string
+	To        string
+	Amount    float64
+	Timestamp time.Time
 }
 
 // ErrorResponse is model of API error response
