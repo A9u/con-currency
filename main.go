@@ -3,8 +3,8 @@ package main
 import (
 	"con-currency/config"
 	"con-currency/db"
+	"con-currency/exchangerate"
 	"con-currency/service"
-	"con-currency/xeservice"
 	"time"
 
 	logger "github.com/sirupsen/logrus"
@@ -26,7 +26,7 @@ func main() {
 		return
 	}
 
-	exchangeRater := xeservice.New() // will ret interface
+	converter := exchangerate.New() // will ret interface
 
 	storer, err := db.Init() // will ret interface
 	if err != nil {
@@ -43,7 +43,7 @@ func main() {
 	currencies := config.GetStringSlice("currency_list")
 
 	// Starting the process
-	service.StartProcess(currencies, exchangeRater, storer)
+	service.StartProcess(currencies, converter, storer)
 
 	elapsed := time.Since(start)
 	logger.WithField("info:", elapsed).Info("Execution time")

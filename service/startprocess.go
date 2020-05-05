@@ -2,8 +2,8 @@ package service
 
 import (
 	"con-currency/db"
+	"con-currency/exchangerate"
 	"con-currency/model"
-	"con-currency/xeservice"
 
 	logger "github.com/sirupsen/logrus"
 )
@@ -14,12 +14,12 @@ import (
 // 	Password string
 // }
 
-// func (xeService XEServiceMock) GetExchangeRate(currency string) (xeResp model.XEcurrency, err error) {
+// func (xeService XEServiceMock) GetConverte(currency string) (xeResp model.XEcurrency, err error) {
 // 	return
 // }
 
 //StartProcess start the process of fetching currency exchange rates and insert it into database
-func StartProcess(currencies []string, exchangeRater xeservice.ExchangeRater, storer db.Storer) {
+func StartProcess(currencies []string, converter exchangerate.Converter, storer db.Storer) {
 	var rowsAffected int64
 
 	//xe := XEServiceMock{}
@@ -31,7 +31,7 @@ func StartProcess(currencies []string, exchangeRater xeservice.ExchangeRater, st
 
 	// Creating workers
 	for w := 0; w <= 10; w++ {
-		go processCurrencies(exchangeRater, storer, jobs, results)
+		go processCurrencies(converter, storer, jobs, results)
 	}
 
 	// sending jobs
@@ -55,11 +55,11 @@ func StartProcess(currencies []string, exchangeRater xeservice.ExchangeRater, st
 	logger.WithField("rows affected", rowsAffected).Info("Job successfull")
 }
 
-// func processCurrencies(xeService xeservice.GetExchangeRater, dbInstance *sql.DB, jobs <-chan string, results chan<- model.Results) {
-func processCurrencies(exchangeRater xeservice.ExchangeRater, storer db.Storer, jobs <-chan string, results chan<- model.Results) {
+// func processCurrencies(xeService xeservice.GetConverter, dbInstance *sql.DB, jobs <-chan string, results chan<- model.Results) {
+func processCurrencies(converter exchangerate.Converter, storer db.Storer, jobs <-chan string, results chan<- model.Results) {
 
 	for currency := range jobs {
-		rowCnt, err := processCurrency(currency, exchangeRater, storer)
+		rowCnt, err := processCurrency(currency, converter, storer)
 		if err != nil {
 			results <- model.Results{
 				RowsAffected: 0,
@@ -76,14 +76,14 @@ func processCurrencies(exchangeRater xeservice.ExchangeRater, storer db.Storer, 
 	}
 }
 
-// func processCurrency(currency string, xeService xeservice.GetExchangeRater, dbInstance *sql.DB) (rowCnt int64, err error) {
-func processCurrency(currency string, exchangeRater xeservice.ExchangeRater, storer db.Storer) (rowCnt int64, err error) {
-	xeResp, err := exchangeRater.GetExchangeRate(currency)
+// func processCurrency(currency string, xeService xeservice.GetConverter, dbInstance *sql.DB) (rowCnt int64, err error) {
+func processCurrency(currency string, converter exchangerate.Converter, storer db.Storer) (rowCnt int64, err error) {
+	resp, err := converter.Get(currency)
 	if err != nil {
 		return
 	}
 
-	rowCnt, err = storer.UpsertCurrencies(xeResp)
+	rowCnt, err = storer.UpsertCurrencies(resp)
 	if err != nil {
 		return
 	}
