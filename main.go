@@ -26,10 +26,7 @@ func main() {
 		return
 	}
 
-	//Creating new xeService object
-	xeService := xeservice.New()
-
-	//Initialize database
+	exchangeRater := xeservice.New() // will ret interface
 
 	storer, err := db.Init() // will ret interface
 	if err != nil {
@@ -46,7 +43,7 @@ func main() {
 	currencies := config.GetStringSlice("currency_list")
 
 	// Starting the process
-	service.StartProcess(currencies, xeService, storer)
+	service.StartProcess(currencies, exchangeRater, storer)
 
 	elapsed := time.Since(start)
 	logger.WithField("info:", elapsed).Info("Execution time")

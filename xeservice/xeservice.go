@@ -18,17 +18,18 @@ type XEService struct {
 	Password string
 }
 
-//GetExchangeRater is an interface
-// type GetExchangeRater interface {
-// 	GetExchangeRate(string) (model.XEcurrency, error)
-// }
+//ExchangeRater is an interface
+type ExchangeRater interface {
+	GetExchangeRate(string) (model.XEcurrency, error)
+}
 
 // New creates a instance of XEService
-func New() (xeService XEService) {
+func New() ExchangeRater {
+	xeService := XEService{}
 	xeService.Username = config.GetConfigString("api_config.xe_account_id")
 	xeService.Password = config.GetConfigString("api_config.xe_account_key")
 	xeService.URL = config.GetConfigString("api_config.xe_url")
-	return
+	return &xeService
 }
 
 //GetExchangeRate fetches the currency rate with respect to other currencies
