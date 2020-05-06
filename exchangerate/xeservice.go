@@ -5,11 +5,11 @@ import (
 	"con-currency/model"
 	"encoding/json"
 	"errors"
+
+	logger "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"time"
-
-	logger "github.com/sirupsen/logrus"
 )
 
 //XEService is model of the XE credentials
@@ -20,14 +20,14 @@ type xeServiceConfig struct {
 }
 
 type xeResponse struct {
-	terms     string    `json:"terms"`
-	privacy   string    `json:"privacy"`
-	from      string    `json:"from"`
-	amount    float64   `json:"amount"`
-	timestamp time.Time `json:"timestamp"`
-	to        []struct {
-		quotecurrency string  `json:"quotecurrency"`
-		mid           float64 `json:"mid"`
+	Terms     string    `json:"terms"`
+	Privacy   string    `json:"privacy"`
+	From      string    `json:"from"`
+	Amount    float64   `json:"amount"`
+	Timestamp time.Time `json:"timestamp"`
+	To        []struct {
+		Quotecurrency string  `json:"quotecurrency"`
+		Mid           float64 `json:"mid"`
 	} `json:"to"`
 }
 
@@ -41,6 +41,7 @@ func New() Converter {
 	xeConfig.username = config.GetConfigString("api_config.xe_account_id")
 	xeConfig.password = config.GetConfigString("api_config.xe_account_key")
 	xeConfig.url = config.GetConfigString("api_config.xe_url")
+
 	return &XeService{xeConfig}
 }
 
@@ -91,14 +92,15 @@ func (converter *XeService) Get(currency string) (rates []model.CurrencyRate, er
 	}
 
 	// for successful response
+
 	err = json.Unmarshal(respBody, &xeResp)
 	if err != nil {
 		logger.WithField("err", err.Error()).Error("Unmarshal Failed")
 		return
 	}
 
-	for _, value := range xeResp.to {
-		rates = append(rates, model.CurrencyRate{xeResp.from, value.quotecurrency, value.mid, xeResp.timestamp})
+	for _, value := range xeResp.To {
+		rates = append(rates, model.CurrencyRate{xeResp.From, value.Quotecurrency, value.Mid, xeResp.Timestamp})
 	}
 	return rates, nil
 }

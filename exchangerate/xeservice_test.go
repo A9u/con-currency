@@ -1,18 +1,18 @@
-package test
+package exchangerate
 
 import (
 	"con-currency/config"
+	"con-currency/exchangerate"
 	"con-currency/model"
-	"con-currency/xeservice"
-	"reflect"
 	"testing"
 
-	"github.com/nbio/st"
+	"github.com/stretchr/testify/assert"
 	gock "gopkg.in/h2non/gock.v1"
 )
 
 func TestGetExRateFromAPI(t *testing.T) {
-	err := config.InitConfig("../config")
+	assert := assert.New(t)
+	err := config.Init("../config")
 	if err != nil {
 		t.Errorf("InitJob = %d; want ", err)
 		return
@@ -21,7 +21,7 @@ func TestGetExRateFromAPI(t *testing.T) {
 	xeResponse := `{
     "terms": "http://www.xe.com/legal/dfs.php",
     "privacy": "http://www.xe.com/privacy.php",
-    "from": "USD",
+    "from": "EUR",
     "amount": 1,
     "timestamp": "2020-04-27T00:00:00Z",
     "to": [
@@ -34,23 +34,27 @@ func TestGetExRateFromAPI(t *testing.T) {
 
 	defer gock.Off()
 	gock.New("https://xecdapi.xe.com/v1/convert_from.json").
-		MatchHeader("Authorization", "Basic c3BiZW50MzQzNDM2MDUwOmVma3YyczEyM2RsOTNzc2U3MXRtajhyM243").
 		MatchParams(map[string]string{
-			"from": "USD",
+			"from": "EUR",
 			"to":   "INR",
 		}).
+		MatchHeader("Authorization", "Basic c2JlbnRlcnMzNTY4NDk1MDE6cDE5bnUxN3BvcnRzbWxzdXBkZmUwbjRnY3Q=").
 		Reply(200).
 		JSON([]byte(xeResponse))
 
-	r, e := xeservice.GetExRateFromAPI("USD")
-	st.Expect(t, reflect.TypeOf(r), reflect.TypeOf(model.XEcurrency{}))
-	st.Expect(t, e, nil)
+	xeservice := exchangerate.New()
+	rates, e := xeservice.Get("EUR")
 
-	st.Expect(t, gock.IsDone(), true)
+	assert.NotNil(rates)
+	assert.Nil(e)
+	assert.True(gock.IsDone())
+	assert.IsType([]model.CurrencyRate{}, rates)
 }
 
 func TestGetExRateFromAPIFailure(t *testing.T) {
-	err := config.InitConfig("../config")
+	assert := assert.New(t)
+
+	err := config.Init("../config")
 	if err != nil {
 		t.Errorf("InitJob = %d; want ", err)
 		return
@@ -60,18 +64,18 @@ func TestGetExRateFromAPIFailure(t *testing.T) {
     "message": "No USDD found on 2020-04-27T00:00:00Z",
     "documentation_url": "https://xecdapi.xe.com/docs/v1/"
 }`
+
 	defer gock.Off()
 	gock.New("https://xecdapi.xe.com/v1/convert_from.json").
 		MatchParams(map[string]string{
 			"from": "UST",
 			"to":   "INR",
 		}).
-		Reply(301).
+		Reply(500).
 		JSON([]byte(xeResponse))
 
-	r, e := xeservice.GetExRateFromAPI("UST")
-	st.Expect(t, r, model.XEcurrency{})
-	st.Expect(t, (e != nil), true)
-
-	st.Expect(t, gock.IsDone(), true)
+	xeservice := exchangerate.New()
+	r, e := xeservice.Get("UST")
+	assert.Nil(r)
+	assert.NotNil(e)
 }
