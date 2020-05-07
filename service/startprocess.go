@@ -12,19 +12,13 @@ import (
 func StartProcess(currencies []string, converter exchangerate.Converter, storer db.Storer) {
 	var rowsAffected int64
 
-	// creating channel for sending currency
-	currencyChan := make(chan string)
-
 	// creating channel for receiving errors and response
 	resultChan := make(chan model.Results)
 
 	// sending jobs
 	for _, currency := range currencies {
-		go processCurrency(converter, storer, currencyChan, resultChan)
-		currencyChan <- currency
+		go processCurrency(converter, storer, currency, resultChan)
 	}
-
-	close(currencyChan)
 
 	// recieving results
 	for i := 0; i < len(currencies); i++ {
@@ -42,8 +36,7 @@ func StartProcess(currencies []string, converter exchangerate.Converter, storer 
 }
 
 // func processCurrency(currency string, xeService xeservice.GetConverter, dbInstance *sql.DB) (rowCnt int64, err error) {
-func processCurrency(converter exchangerate.Converter, storer db.Storer, currencyChan <-chan string, results chan<- model.Results) {
-	currency := <-currencyChan
+func processCurrency(converter exchangerate.Converter, storer db.Storer, currency string, results chan<- model.Results) {
 	resp, err := converter.Get(currency)
 	if err != nil {
 		return
