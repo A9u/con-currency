@@ -3,8 +3,6 @@ package service
 import (
 	"con-currency/db"
 	"con-currency/exchangerate"
-	"con-currency/model"
-
 	logger "github.com/sirupsen/logrus"
 )
 
@@ -13,42 +11,43 @@ func StartProcess(currencies []string, converter exchangerate.Converter, storer 
 	var rowsAffected int64
 
 	// creating channel for receiving errors and response
-	resultChan := make(chan model.Results)
+	resultChan := make(chan int64, len(currencies))
+	currencyChan := make(chan string, len(currencies))
 
+	for i := 0; i <= 11; i++ {
+		go processCurrency(converter, storer, currencyChan, resultChan)
+	}
 	// sending jobs
 	for _, currency := range currencies {
-		go processCurrency(converter, storer, currency, resultChan)
+		currencyChan <- currency
 	}
 
+	close(currencyChan)
 	// recieving results
 	for i := 0; i < len(currencies); i++ {
 		res := <-resultChan
-		if res.Err != nil {
-			logger.WithField("err", res.Err.Error()).Error("Exit")
-			return
-		}
+		rowsAffected += res
 
-		rowsAffected += res.RowsAffected
 	}
 
 	logger.WithField("rows affected", rowsAffected).Info("Job successfull")
 	close(resultChan)
 }
 
-// func processCurrency(currency string, xeService xeservice.GetConverter, dbInstance *sql.DB) (rowCnt int64, err error) {
-func processCurrency(converter exchangerate.Converter, storer db.Storer, currency string, results chan<- model.Results) {
-	resp, err := converter.Get(currency)
-	if err != nil {
-		return
-	}
+// func processCurrency(currency string, xeService xeservice.GetConverter, dbInstance *sql.DB) (rowCnt int6464, err error) {
+func processCurrency(converter exchangerate.Converter, storer db.Storer, currencyChan <-chan string, results chan<- int64) {
+	for currency := range currencyChan {
+		resp, err := converter.Get(currency)
+		if err != nil {
+			return
+		}
 
-	rowCnt, err := storer.UpsertCurrencies(resp)
-	if err != nil {
-		return
-	}
+		rowCnt, err := storer.UpsertCurrencies(resp)
+		if err != nil {
+			logger.WithField("err", err.Error()).Error("Exit")
+			return
+		}
 
-	results <- model.Results{
-		RowsAffected: rowCnt,
-		Err:          nil,
+		results <- rowCnt
 	}
 }
