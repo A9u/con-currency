@@ -17,7 +17,7 @@ type ErrorResponse struct {
 }
 
 // Results is model of the gouroutine responses
-type Results struct {
+type Result struct {
 	RowsAffected int64
 	Err          error
 }
