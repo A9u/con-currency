@@ -5,27 +5,37 @@ import (
 	"con-currency/db"
 	"con-currency/exchangerate"
 	"con-currency/service"
-	"time"
-
 	logger "github.com/sirupsen/logrus"
+	"time"
 )
 
 func main() {
-	start := time.Now()
-
-	// logger config
-	logger.SetFormatter(&logger.TextFormatter{
-		FullTimestamp:   true,
-		TimestampFormat: "02-01-2006 15:04:05",
-	})
-
 	// Initialize configurations
 	err := config.Init("config")
+
 	if err != nil {
 		logger.WithField("error in config file", err.Error()).Error("Exit")
 		return
 	}
 
+	interval := config.GetInt("time_interval")
+	for {
+		start := time.Now()
+		fetchCurrency()
+
+		elapsed := time.Since(start)
+		logger.WithField("info:", elapsed).Info("Execution time")
+
+		elapsedSeconds := elapsed.Round(time.Second).Seconds()
+		remaining := float64(interval) - elapsedSeconds
+		logger.WithField("info: ", remaining).Info("Sleeping")
+
+		time.Sleep(time.Duration(remaining) * time.Second)
+		logger.Info("Waking up")
+	}
+}
+
+func fetchCurrency() {
 	converter := exchangerate.New() // will ret interface
 
 	storer, err := db.Init() // will ret interface
@@ -42,9 +52,7 @@ func main() {
 
 	currencies := config.GetStringSlice("currency_list")
 
+	logger.Info(currencies)
 	// Starting the process
 	service.StartProcess(currencies, converter, storer)
-
-	elapsed := time.Since(start)
-	logger.WithField("info:", elapsed).Info("Execution time")
 }
