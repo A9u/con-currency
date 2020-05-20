@@ -23,12 +23,12 @@ type pgStore struct {
 // Init Initialize DB
 func Init() (storer Storer, err error) {
 	conStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
-		config.GetConfigString("db_config.host"),
-		config.GetConfigString("db_config.port"),
-		config.GetConfigString("db_config.user"),
-		config.GetConfigString("db_config.password"),
-		config.GetConfigString("db_config.dbname"),
-		config.GetConfigString("db_config.sslmode"),
+		config.GetString("db_config.host"),
+		config.GetString("db_config.port"),
+		config.GetString("db_config.user"),
+		config.GetString("db_config.password"),
+		config.GetString("db_config.dbname"),
+		config.GetString("db_config.sslmode"),
 	)
 
 	db, err := sql.Open(driverName, conStr)

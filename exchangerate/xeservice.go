@@ -38,9 +38,9 @@ type XeService struct {
 // New creates a instance of XeService
 func New() Converter {
 	xeConfig := xeServiceConfig{}
-	xeConfig.username = config.GetConfigString("api_config.xe_account_id")
-	xeConfig.password = config.GetConfigString("api_config.xe_account_key")
-	xeConfig.url = config.GetConfigString("api_config.xe_url")
+	xeConfig.username = config.GetString("api_config.xe_account_id")
+	xeConfig.password = config.GetString("api_config.xe_account_key")
+	xeConfig.url = config.GetString("api_config.xe_url")
 
 	return &XeService{xeConfig}
 }
@@ -58,7 +58,7 @@ func (converter *XeService) Get(currency string) (rates []model.CurrencyRate, er
 
 	query := req.URL.Query()
 
-	query.Add("to", "INR") // '*' for all
+	query.Add("to", "*") // '*' for all
 	query.Add("from", currency)
 
 	req.URL.RawQuery = query.Encode()
@@ -86,7 +86,7 @@ func (converter *XeService) Get(currency string) (rates []model.CurrencyRate, er
 			return
 		}
 		// warning
-		logger.WithField("msg", "XE return error").Info("XE error")
+		logger.WithField("msg", errResp.Message).Info("XE error")
 
 		return nil, errors.New(errResp.Message)
 	}
@@ -95,6 +95,7 @@ func (converter *XeService) Get(currency string) (rates []model.CurrencyRate, er
 
 	err = json.Unmarshal(respBody, &xeResp)
 	if err != nil {
+
 		logger.WithField("err", err.Error()).Error("Unmarshal Failed")
 		return
 	}

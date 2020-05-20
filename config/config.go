@@ -20,14 +20,16 @@ func Init(path string) error {
 	return nil
 }
 
-//GetConfigString method to get configs from config file
-func GetConfigString(keyName string) string { //todo getstring
-	keyValue := viper.GetString(keyName)
-	return keyValue
+//GetString method to get configs from config file
+func GetString(keyName string) string {
+	return viper.GetString(keyName)
 }
 
 //GetStringSlice method to get configs from config file
 func GetStringSlice(keyName string) []string {
-	keyValue := viper.GetStringSlice(keyName)
-	return keyValue
+	return viper.GetStringSlice(keyName)
+}
+
+func GetInt(keyName string) int {
+	return viper.GetInt(keyName)
 }
