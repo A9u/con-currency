@@ -48,7 +48,6 @@ func (s *pgStore) UpsertCurrencies(currencyRates []model.CurrencyRate) (rowCnt i
 
 	result, err := s.db.Exec(query, val...)
 	if err != nil {
-		fmt.Println("query→", query, val)
 		logger.WithField("err", err.Error()).Error("Query failed")
 		return 0, err
 	}
@@ -98,7 +97,7 @@ func (s *pgStore) queryBuilder(currencyRates []model.CurrencyRate) (string, []in
 	}
 
 	query = query[:len(query)-1]
-	query += `ON CONFLICT ON CONSTRAINT unq
+	query += `ON CONFLICT ON CONSTRAINT unique_from_to
 		      DO UPDATE SET rate = excluded.rate,updated_at = excluded.updated_at where exchange_rates.rate is distinct from excluded.rate`
 
 	return query, values
