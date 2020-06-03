@@ -5,20 +5,23 @@ import (
 	"con-currency/db"
 	"con-currency/exchangerate"
 	"con-currency/model"
-	logger "github.com/sirupsen/logrus"
 	"strings"
+
+	logger "github.com/sirupsen/logrus"
 )
 
 //StartProcess start the process of fetching currency exchange rates and insert it into database
 func StartProcess(currencies []string, converter exchangerate.Converter, storer db.Storer) {
+
 	var rowsAffected int64
 
 	// creating channel for receiving errors and response
 	resultChan := make(chan model.Result, len(currencies))
 	currencyChan := make(chan string, len(currencies))
 
-	for i := 0; i <= 11; i++ {
-		go processCurrency(converter, storer, currencyChan, resultChan)
+	toCurrencies := strings.Join(currencies, ",")
+	for i := 0; i <= 20; i++ {
+		go processCurrencies(converter, storer, currencyChan, resultChan, toCurrencies)
 	}
 
 	errors := make(map[error]struct{})
@@ -38,7 +41,7 @@ func StartProcess(currencies []string, converter exchangerate.Converter, storer 
 	}
 
 	logger.WithField("rows affected", rowsAffected).Info("Job successfull")
-
+	logger.WithField("count of errors occurred", len(errors)).Info("Error")
 	if len(errors) > 0 {
 		logger.Info("send mail here")
 		notify(errors)
@@ -47,28 +50,28 @@ func StartProcess(currencies []string, converter exchangerate.Converter, storer 
 }
 
 // func processCurrency(currency string, xeService xeservice.GetConverter, dbInstance *sql.DB) (rowCnt int6464, err error) {
-func processCurrency(converter exchangerate.Converter, storer db.Storer, currencyChan <-chan string, results chan<- model.Result) {
+func processCurrencies(converter exchangerate.Converter, storer db.Storer, currencyChan <-chan string, results chan<- model.Result, toCurrencies string) {
 	for currency := range currencyChan {
-		resp, err := converter.Get(currency)
-		if err != nil {
-			results <- model.Result{0, err}
-			return
-		}
-
-		rowCnt, err := storer.UpsertCurrencies(resp)
-		logger.Info(err)
+		rowCnt, err := processCurrency(converter, storer, currency, toCurrencies)
 		if err != nil {
 			logger.WithField("err", err.Error()).Error("Exit")
-			results <- model.Result{0, err}
-			return
 		}
-
-		results <- model.Result{rowCnt, nil}
+		results <- model.Result{RowsAffected: rowCnt, Err: err}
 	}
+}
+
+func processCurrency(converter exchangerate.Converter, storer db.Storer, fromCurrency, toCurrencies string) (rowCnt int64, err error) {
+	resp, err := converter.Get(fromCurrency, toCurrencies)
+	if err != nil {
+		return
+	}
+	rowCnt, err = storer.UpsertCurrencies(resp)
+	return
 }
 
 func notify(errors map[error]struct{}) {
 	var errorMsg string
+
 	for k, _ := range errors {
 		if !strings.Contains(errorMsg, k.Error()) {
 			errorMsg += k.Error() + "\n"

@@ -46,7 +46,7 @@ func New() Converter {
 }
 
 //GetConverter fetches the currency rate with respect to other currencies
-func (converter *XeService) Get(currency string) (rates []model.CurrencyRate, err error) {
+func (converter *XeService) Get(currency string, toCurrencies string) (rates []model.CurrencyRate, err error) {
 
 	var xeResp xeResponse
 	client := &http.Client{}
@@ -58,7 +58,7 @@ func (converter *XeService) Get(currency string) (rates []model.CurrencyRate, er
 
 	query := req.URL.Query()
 
-	query.Add("to", "*") // '*' for all
+	query.Add("to", toCurrencies) // '*' for all
 	query.Add("from", currency)
 
 	req.URL.RawQuery = query.Encode()
