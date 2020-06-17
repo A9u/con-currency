@@ -37,7 +37,7 @@ func Init() (storer Storer, err error) {
 		return
 	}
 
-	logger.WithField("conn string", conStr).Info("DB connected successfully")
+	logger.Info("DB connected successfully")
 
 	return &pgStore{db}, nil
 }
@@ -67,7 +67,7 @@ func (s *pgStore) CreateTableIfMissing() error {
 	      rate double precision,
 	      created_at timestamp with time zone,
 	      updated_at timestamp with time zone,
-          CONSTRAINT unq UNIQUE (from_currency, to_currency))`
+          CONSTRAINT unique_from_to UNIQUE (from_currency, to_currency))`
 
 	_, err := s.db.Exec(q)
 	if err != nil {
