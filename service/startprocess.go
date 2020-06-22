@@ -5,10 +5,12 @@ import (
 	"con-currency/db"
 	"con-currency/exchangerate"
 	"con-currency/model"
-	"strings"
-
 	logger "github.com/sirupsen/logrus"
+	"strings"
+	"time"
 )
+
+var lastMailSent time.Time
 
 //StartProcess start the process of fetching currency exchange rates and insert it into database
 func StartProcess(currencies []string, converter exchangerate.Converter, storer db.Storer) {
@@ -42,7 +44,7 @@ func StartProcess(currencies []string, converter exchangerate.Converter, storer 
 
 	logger.WithField("rows affected", rowsAffected).Info("Job successfull")
 	logger.WithField("count of errors occurred", len(errors)).Info("Error")
-	if len(errors) > 0 {
+	if len(errors) > 0 && canSendMail() {
 		logger.Info("send mail here")
 		notify(errors)
 	}
@@ -88,5 +90,15 @@ func notify(errors map[error]struct{}) {
 
 	if err != nil {
 		logger.WithField("err", err.Error()).Error("Exit")
+	} else {
+		lastMailSent = time.Now()
 	}
+}
+
+func canSendMail() bool {
+	elapsed := time.Since(lastMailSent)
+	elapsedHours := elapsed.Round(time.Hour).Hours()
+	mailInterval := config.GetInt("mail_interval")
+	return elapsedHours > float64(mailInterval)
+
 }
