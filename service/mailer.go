@@ -17,7 +17,6 @@ func NewMailer() Mailer {
 }
 
 func (em emailProvider) Send(to []string, from, subject, body string) (err error) {
-
 	provider := config.GetString("mail_provider")
 	auth := smtp.PlainAuth("", config.GetString("mail_username"), config.GetString("mail_password"), provider)
 

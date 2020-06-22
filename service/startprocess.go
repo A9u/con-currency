@@ -55,9 +55,6 @@ func StartProcess(currencies []string, converter exchangerate.Converter, storer 
 func processCurrencies(converter exchangerate.Converter, storer db.Storer, currencyChan <-chan string, results chan<- model.Result, toCurrencies string) {
 	for currency := range currencyChan {
 		rowCnt, err := processCurrency(converter, storer, currency, toCurrencies)
-		if err != nil {
-			logger.WithField("err", err.Error()).Error("Exit")
-		}
 		results <- model.Result{RowsAffected: rowCnt, Err: err}
 	}
 }
@@ -85,8 +82,9 @@ func notify(errors map[error]struct{}) {
 `
 	body += errorMsg
 
+	subject := "Failed to fetch rates [" + config.GetString("environment") + "]"
 	mailer := NewMailer()
-	err := mailer.Send(config.GetStringSlice("mail_recipients"), config.GetString("mail_sender"), "Failed to fetch rates", body)
+	err := mailer.Send(config.GetStringSlice("mail_recipients"), config.GetString("mail_sender"), subject, body)
 
 	if err != nil {
 		logger.WithField("err", err.Error()).Error("Exit")

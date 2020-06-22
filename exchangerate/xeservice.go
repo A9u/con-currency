@@ -86,8 +86,6 @@ func (converter *XeService) Get(currency string, toCurrencies string) (rates []m
 			return
 		}
 		// warning
-		logger.WithField("msg", errResp.Message).Info("XE error")
-
 		return nil, errors.New(errResp.Message)
 	}
 
