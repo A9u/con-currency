@@ -40,4 +40,4 @@
 
   Benchmark: 
   
-took 15 seconds for 162 currencies.
+took 2 seconds for 162 currencies.
